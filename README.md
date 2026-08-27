@@ -1,60 +1,134 @@
 # FamilyGuard
 
-**Family safety / parental-control MVP** with separate parent and child experiences plus a small backend service.
+A consent-first **family safety / parental-control MVP** with a FastAPI backend, persistent local storage, and separate parent/child web experiences.
 
-This repository contains a portfolio reconstruction of the personal FamilyGuard project. The demo focuses on transparent, consent-based family safety features rather than hidden device monitoring.
+> **Portfolio status:** this repository is a cleaned-up reconstruction of an earlier personal project concept. It demonstrates the product flow and backend architecture without pretending to be production monitoring software.
 
-## What the app is for
+## Product idea
 
-FamilyGuard is designed for a parent and child to use together:
+FamilyGuard is built around transparent family safety rather than hidden surveillance. A child intentionally shares a check-in; the parent dashboard can then display the latest shared status and a small set of device-usage summaries.
 
-- the **child side** can send a check-in and share current status/location intentionally;
-- the **parent side** can see the latest check-in, battery/device status, screen-time summary and app-usage summary;
-- the **backend** keeps the shared family state and exposes a small REST API.
+### Parent experience
 
-## Stack
+- view the child's latest check-in;
+- see an intentionally shared location label;
+- see battery level and last check-in time;
+- view screen-time and top-app summaries;
+- refresh the dashboard from the API.
 
-- Python
-- FastAPI
-- Pydantic
-- HTML / CSS / JavaScript
+### Child experience
 
-## Project structure
+- choose a status message;
+- choose what location label to share;
+- share battery level;
+- send the check-in explicitly.
+
+## Tech stack
+
+**Backend:** Python · FastAPI · Pydantic · SQLAlchemy · SQLite  
+**Frontend:** HTML · CSS · JavaScript  
+**Quality:** Pytest · Ruff · GitHub Actions · Docker
+
+## Architecture
 
 ```text
 familyguard/
 ├── backend/
-│   ├── main.py
-│   └── requirements.txt
-└── web/
-    ├── index.html
-    ├── child.html
-    ├── app.js
-    └── styles.css
+│   ├── main.py          # FastAPI routes and app lifecycle
+│   ├── db.py            # SQLAlchemy engine/session
+│   ├── models.py        # persistent database models
+│   ├── schemas.py       # request/response validation
+│   └── tests/           # API tests
+├── web/
+│   ├── index.html       # parent dashboard
+│   ├── child.html       # child check-in screen
+│   ├── app.js
+│   └── styles.css
+├── .github/workflows/ci.yml
+├── Dockerfile
+└── pyproject.toml
 ```
 
 ## Run locally
 
+### 1. Start the API
+
+From the repository root:
+
 ```bash
-cd backend
 python -m venv .venv
-source .venv/bin/activate  # macOS/Linux
-# .venv\Scripts\activate  # Windows
-pip install -r requirements.txt
-uvicorn main:app --reload
 ```
 
-Then open `web/index.html` for the parent dashboard or `web/child.html` for the child check-in screen.
+Activate it:
 
-The API runs on `http://127.0.0.1:8000`.
+```bash
+# macOS / Linux
+source .venv/bin/activate
 
-## Demo API
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+```
 
-- `GET /children`
-- `GET /children/{child_id}`
-- `POST /children/{child_id}/check-in`
-- `POST /children/{child_id}/usage`
+Install dependencies and start the server:
 
-## Portfolio note
+```bash
+pip install -r backend/requirements.txt
+uvicorn backend.main:app --reload
+```
 
-This version is intentionally a safe demo: it does **not** silently capture screenshots, browser history, messages, microphone data, or precise location. Any shared status in the demo is entered or submitted explicitly by the child side.
+API: `http://127.0.0.1:8000`  
+Swagger docs: `http://127.0.0.1:8000/docs`
+
+### 2. Start the web demo
+
+In another terminal:
+
+```bash
+cd web
+python -m http.server 5173
+```
+
+Open:
+
+- Parent dashboard: `http://127.0.0.1:5173/index.html`
+- Child check-in: `http://127.0.0.1:5173/child.html`
+
+## API
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/health` | Health check |
+| `GET` | `/children` | List children |
+| `GET` | `/children/{id}` | Read current shared state |
+| `POST` | `/children/{id}/check-in` | Submit an explicit check-in |
+| `POST` | `/children/{id}/usage` | Update usage summary |
+
+## Tests and linting
+
+```bash
+pip install -r backend/requirements-dev.txt
+ruff check backend
+pytest -q
+```
+
+The same checks run automatically in GitHub Actions.
+
+## Docker
+
+```bash
+docker build -t familyguard .
+docker run --rm -p 8000:8000 familyguard
+```
+
+## Privacy & safety boundary
+
+This demo intentionally does **not** implement covert screenshots, message interception, microphone capture, hidden browser-history collection, or silent precise-location tracking. Shared information is explicit and visible in the product flow.
+
+## Next product steps
+
+- parent/child authentication and family invitations;
+- PostgreSQL for hosted deployments;
+- role-based authorization;
+- encrypted device-to-account pairing;
+- notification preferences;
+- audit history for shared check-ins.
