@@ -1,6 +1,7 @@
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]
 python_files = ["test_*.py"]
+pythonpath = ["."]
 
 [tool.ruff]
 target-version = "py312"
