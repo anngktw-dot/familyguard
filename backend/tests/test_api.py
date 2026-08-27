@@ -1,3 +1,4 @@
+# ruff: noqa: E402, I001
 import os
 
 os.environ.setdefault(
@@ -5,9 +6,9 @@ os.environ.setdefault(
     "sqlite:///./test_familyguard.db",
 )
 
-from fastapi.testclient import TestClient  # noqa: E402
+from fastapi.testclient import TestClient
 
-from backend.main import app  # noqa: E402
+from backend.main import app
 
 
 def test_health() -> None:
