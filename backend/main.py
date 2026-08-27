@@ -1,6 +1,7 @@
-from contextlib import asynccontextmanager
-from datetime import datetime, timezone
 import os
+from contextlib import asynccontextmanager
+from datetime import UTC, datetime
+from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +11,8 @@ from sqlalchemy.orm import Session
 from backend.db import Base, SessionLocal, engine, get_db
 from backend.models import Child
 from backend.schemas import CheckInRequest, ChildRead, UsageUpdateRequest
+
+DbSession = Annotated[Session, Depends(get_db)]
 
 
 def _seed_demo_child() -> None:
@@ -26,7 +29,7 @@ def _seed_demo_child() -> None:
                 battery_percent=86,
                 screen_time_minutes=132,
                 top_apps=["YouTube", "Maps", "Messages"],
-                last_check_in=datetime.now(timezone.utc),
+                last_check_in=datetime.now(UTC),
             )
         )
         db.commit()
@@ -86,12 +89,12 @@ def health() -> dict[str, str]:
 
 
 @app.get("/children", response_model=list[ChildRead], tags=["children"])
-def list_children(db: Session = Depends(get_db)) -> list[Child]:
+def list_children(db: DbSession) -> list[Child]:
     return list(db.scalars(select(Child).order_by(Child.id)).all())
 
 
 @app.get("/children/{child_id}", response_model=ChildRead, tags=["children"])
-def get_child(child_id: int, db: Session = Depends(get_db)) -> Child:
+def get_child(child_id: int, db: DbSession) -> Child:
     return _get_child_or_404(child_id, db)
 
 
@@ -104,13 +107,13 @@ def get_child(child_id: int, db: Session = Depends(get_db)) -> Child:
 def create_check_in(
     child_id: int,
     payload: CheckInRequest,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> Child:
     child = _get_child_or_404(child_id, db)
     child.status = payload.status
     child.location_label = payload.location_label
     child.battery_percent = payload.battery_percent
-    child.last_check_in = datetime.now(timezone.utc)
+    child.last_check_in = datetime.now(UTC)
     db.commit()
     db.refresh(child)
     return child
@@ -124,7 +127,7 @@ def create_check_in(
 def update_usage(
     child_id: int,
     payload: UsageUpdateRequest,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> Child:
     child = _get_child_or_404(child_id, db)
     child.screen_time_minutes = payload.screen_time_minutes
